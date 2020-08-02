@@ -72,6 +72,15 @@ functions:
           authorizer: Auth
           cors: true
           reqValidatorName: RequestBodyValidator
+  DeleteTodo:
+    handler: src/lambda/http/deleteTodo.handler
+    events:
+      - http:
+          method: delete
+          path: todos/{todoId}
+          authorizer: Auth
+          cors: true
+          reqValidatorName: RequestBodyValidator
 
 resources:
   Resources:

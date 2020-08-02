@@ -87,6 +87,20 @@ export class TodosAccess {
       })
       .promise();
   }
+
+  async deleteTodoById(userId: string, todoId: string) {
+    logger.info(`user id: ${userId}`);
+    logger.info(`todo id: ${todoId}`);
+    await this.docClient
+      .delete({
+        TableName: this.todosTable,
+        Key: {
+          userId,
+          todoId,
+        },
+      })
+      .promise();
+  }
 }
 
 function createDynamoDBClient() {

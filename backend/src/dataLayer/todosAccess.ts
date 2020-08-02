@@ -2,6 +2,7 @@ import { TodoItem } from "../models/todoItem";
 import * as AWS from "aws-sdk";
 import * as AWSXRay from "aws-xray-sdk";
 import { CreateTodoRequest } from "../requests/createTodoRequest";
+import { UpdateTodoRequest } from "../requests/UpdateTodoRequest";
 import uuid from "uuid/v4";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { createLogger } from "../utils/logger";
@@ -60,6 +61,31 @@ export class TodosAccess {
       .promise();
 
     return item;
+  }
+
+  async updateTodo(
+    userId: string,
+    updatedTodo: UpdateTodoRequest,
+    todoId: string
+  ) {
+    await this.docClient
+      .update({
+        TableName: this.todosTable,
+        Key: {
+          userId,
+          todoId,
+        },
+        UpdateExpression: "set #namefield = :n, dueDate = :d, done = :done",
+        ExpressionAttributeValues: {
+          ":n": updatedTodo.name,
+          ":d": updatedTodo.dueDate,
+          ":done": updatedTodo.done,
+        },
+        ExpressionAttributeNames: {
+          "#namefield": "name",
+        },
+      })
+      .promise();
   }
 }
 

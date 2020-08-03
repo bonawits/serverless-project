@@ -10,7 +10,10 @@ import {
 
 import { createLogger } from "../../utils/logger";
 
+import { S3Helper } from "../../helpers/s3Helper";
+
 const logger = createLogger("getTodos");
+const s3Helper = new S3Helper();
 
 export const handler: APIGatewayProxyHandler = async (
   event: APIGatewayProxyEvent
@@ -19,6 +22,10 @@ export const handler: APIGatewayProxyHandler = async (
   const items = await getAllTodos(user);
 
   logger.info(`create group for user ${user}`);
+
+  for (const item of items) {
+    item.attachmentUrl = await s3Helper.getTodoAttachmentUrl(item.todoId);
+  }
 
   return {
     statusCode: 200,

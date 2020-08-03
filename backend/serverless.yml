@@ -21,30 +21,16 @@ provider:
     TODOS_TABLE: Todos-${self:provider.stage}
     USER_ID_INDEX: UserIdIndex
     INDEX_NAME: IndexName
+    IMAGES_S3_BUCKET: sloane-udacity-serverless-project-todo-${self:provider.stage}
 
   tracing:
     lambda: true
     apiGateway: true
 
-  iamRoleStatements:
-    - Effect: Allow
-      Action:
-        - dynamodb:Scan
-        - dynamodb:PutItem
-        - dynamodb:DeleteItem
-        - dynamodb:UpdateItem
-        - dynamodb:Query
-      Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
-    - Effect: Allow
-      Action:
-        - dynamodb:Query
-      Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}/index/${self:provider.environment.USER_ID_INDEX}
-
 functions:
   Auth:
     handler: src/lambda/auth/auth0Authorizer.handler
 
-  # TODO: Configure this function
   GetTodos:
     handler: src/lambda/http/getTodos.handler
     events:
@@ -54,6 +40,22 @@ functions:
           authorizer: Auth
           cors: true
           reqValidatorName: RequestBodyValidator
+    iamRoleStatements:
+      - Effect: "Allow"
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}/index/${self:provider.environment.INDEX_NAME}
+      - Effect: "Allow"
+        Action:
+          - xray:PutTraceSegments
+          - xray:PutTelemetryRecords
+        Resource:
+          - "*"
   CreateTodo:
     handler: src/lambda/http/createTodo.handler
     events:
@@ -63,6 +65,23 @@ functions:
           authorizer: Auth
           cors: true
           reqValidatorName: RequestBodyValidator
+    iamRoleStatements:
+      - Effect: "Allow"
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:Query
+          - dynamodb:PutItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}/index/${self:provider.environment.INDEX_NAME}
+      - Effect: "Allow"
+        Action:
+          - xray:PutTraceSegments
+          - xray:PutTelemetryRecords
+        Resource:
+          - "*"
   UpdateTodo:
     handler: src/lambda/http/updateTodo.handler
     events:
@@ -72,6 +91,24 @@ functions:
           authorizer: Auth
           cors: true
           reqValidatorName: RequestBodyValidator
+    iamRoleStatements:
+      - Effect: "Allow"
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:Query
+          - dynamodb:UpdateItem
+          - dynamodb:UpdateTable
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}/index/${self:provider.environment.INDEX_NAME}
+      - Effect: "Allow"
+        Action:
+          - xray:PutTraceSegments
+          - xray:PutTelemetryRecords
+        Resource:
+          - "*"
   DeleteTodo:
     handler: src/lambda/http/deleteTodo.handler
     events:
@@ -81,6 +118,56 @@ functions:
           authorizer: Auth
           cors: true
           reqValidatorName: RequestBodyValidator
+    iamRoleStatements:
+      - Effect: "Allow"
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:Query
+          - dynamodb:DeleteItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}/index/${self:provider.environment.INDEX_NAME}
+      - Effect: "Allow"
+        Action:
+          - xray:PutTraceSegments
+          - xray:PutTelemetryRecords
+        Resource:
+          - "*"
+  GenerateUploadUrl:
+    handler: src/lambda/http/generateUploadUrl.handler
+    events:
+      - http:
+          method: post
+          path: todos/{todoId}/attachment
+          authorizer: Auth
+          cors: true
+          reqValidatorName: RequestBodyValidator
+    iamRoleStatements:
+      - Effect: "Allow"
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:Query
+          - dynamodb:UpdateItem
+          - dynamodb:UpdateTable
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}/index/${self:provider.environment.INDEX_NAME}
+      - Effect: Allow
+        Action:
+          - s3:PutObject
+          - s3:GetObject
+          - "*"
+        Resource: arn:aws:s3:::${self:provider.environment.IMAGES_S3_BUCKET}/*
+      - Effect: "Allow"
+        Action:
+          - xray:PutTraceSegments
+          - xray:PutTelemetryRecords
+        Resource:
+          - "*"
 
 resources:
   Resources:
@@ -129,3 +216,30 @@ resources:
                 KeyType: RANGE
             Projection:
               ProjectionType: ALL # What attributes will be copied to an index
+    TodoBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:provider.environment.IMAGES_S3_BUCKET}
+        CorsConfiguration:
+          CorsRules:
+            - AllowedHeaders:
+                - "*"
+              AllowedMethods:
+                - GET
+                - POST
+                - PUT
+              AllowedOrigins:
+                - "*"
+    BucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        PolicyDocument:
+          Id: MyPolicy
+          Version: "2012-10-17"
+          Statement:
+            - Sid: PublicReadForGetBucketObjects
+              Effect: Allow
+              Principal: "*"
+              Action: "s3:GetObject"
+              Resource: "arn:aws:s3:::${self:provider.environment.IMAGES_S3_BUCKET}/*"
+        Bucket: ${self:provider.environment.IMAGES_S3_BUCKET}

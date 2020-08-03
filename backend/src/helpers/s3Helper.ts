@@ -1,11 +1,9 @@
 import * as AWS from "aws-sdk";
 import * as AWSXRay from "aws-xray-sdk";
-
-const XAWS = AWSXRay.captureAWS(AWS);
-
 import { createLogger } from "../utils/logger";
 
 const logger = createLogger("s3Helper");
+const XAWS = AWSXRay.captureAWS(AWS);
 
 export class S3Helper {
   constructor(

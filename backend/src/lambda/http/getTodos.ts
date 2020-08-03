@@ -1,15 +1,12 @@
 import "source-map-support/register";
 import { getUserId } from "../utils";
 import { getAllTodos } from "../../businessLogic/todos";
-
 import {
   APIGatewayProxyEvent,
   APIGatewayProxyResult,
   APIGatewayProxyHandler,
 } from "aws-lambda";
-
 import { createLogger } from "../../utils/logger";
-
 import { S3Helper } from "../../helpers/s3Helper";
 
 const logger = createLogger("getTodos");

@@ -23,7 +23,7 @@ export const handler: APIGatewayProxyHandler = async (
   logger.info(`User ${userId} updating group ${todoId} to be ${updatedTodo}`);
   await new TodosAccess().updateTodo(userId, updatedTodo, todoId);
   return {
-    statusCode: 204,
+    statusCode: 200,
     headers: {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Credentials": true,

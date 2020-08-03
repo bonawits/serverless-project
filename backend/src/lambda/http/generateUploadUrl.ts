@@ -1,5 +1,4 @@
 import "source-map-support/register";
-
 import {
   APIGatewayProxyEvent,
   APIGatewayProxyResult,
@@ -22,7 +21,7 @@ export const handler: APIGatewayProxyHandler = async (
   const uploadUrl = await new S3Helper().getPresignedUrl(todoId);
 
   return {
-    statusCode: 200,
+    statusCode: 201,
     headers: {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Credentials": true,
